@@ -1,10 +1,9 @@
-import { Button } from "@mui/joy";
-import CreateFormForm from "../../components/create-form-form/CreateFormForm";
+import CreateSurveyForm from "../../modules/create-survey-form/components/CreateSurveyForm";
 
 const NewForm = () => {
   return (
     <div className="mx-auto max-w-[800px]">
-      <CreateFormForm />
+      <CreateSurveyForm />
     </div>
   );
 };

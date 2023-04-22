@@ -1,20 +1,20 @@
 import { Button, TextField } from "@mui/joy";
 import { useForm, FormProvider } from "react-hook-form";
 import { useWatch } from "react-hook-form";
-import QuestionBlock from "./QuestionBlock";
 import { v4 as uuid } from "uuid";
-import { QuestionBlockContext } from "../../context/questionBlockContext";
 import { useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { QuestionContext } from "../context/questionContext";
+import TextQuestionBlock from "./TextQuestionBlock";
 
 interface QuestionCommonFields {
+  id: string
   question: string;
   isRequired: boolean;
-  key: string;
 }
 
-interface TextQuestion extends QuestionCommonFields {
+export interface TextQuestion extends QuestionCommonFields {
   type: "text";
 }
 
@@ -63,7 +63,7 @@ const validationSchema = yup.object({
     .required(),
 });
 
-const CreateFormForm = () => {
+const CreateSurveyForm = () => {
   const form = useForm<IFormValues>({
     defaultValues: {
       name: "My new form",
@@ -83,10 +83,10 @@ const CreateFormForm = () => {
 
   const handleAddQuestion = () => {
     const newQuestion: TextQuestion = {
+      id: uuid(),
       type: "text",
       question: "",
       isRequired: false,
-      key: uuid(),
     };
 
     formQuestions.append(newQuestion);
@@ -99,7 +99,7 @@ const CreateFormForm = () => {
   });
 
   return (
-    <FormProvider {...form}>
+    <FormProvider {...form}>CreateSurveyForm
       <form onSubmit={handleSubmit}>
         <Button type="submit" fullWidth>
           Submit
@@ -112,14 +112,16 @@ const CreateFormForm = () => {
 
         <div className="mt-[10px] flex flex-col gap-[10px]">
           {form.getValues("questions").map((question, i) => (
-            <QuestionBlockContext.Provider
-              key={question.key}
+            <QuestionContext.Provider
+              key={question.id}
               value={{
                 questionIndex: i,
               }}
             >
-              <QuestionBlock />
-            </QuestionBlockContext.Provider>
+              {question.type === 'text' && (
+                <TextQuestionBlock />
+              )}
+            </QuestionContext.Provider>
           ))}
         </div>
       </form>
@@ -127,4 +129,4 @@ const CreateFormForm = () => {
   );
 };
 
-export default CreateFormForm;
+export default CreateSurveyForm;
