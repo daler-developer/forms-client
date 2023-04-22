@@ -1,15 +1,16 @@
-import { Button, formControlClasses, TextField } from "@mui/joy";
+import { Button, TextField } from "@mui/joy";
 import { useForm, FormProvider } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import QuestionBlock from "./QuestionBlock";
-import { createContext } from "react";
 import { v4 as uuid } from "uuid";
 import { QuestionBlockContext } from "../../context/questionBlockContext";
 import { useFieldArray } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { useDebugValue, useState } from "react";
 
 interface QuestionCommonFields {
   question: string;
-  order: number;
   isRequired: boolean;
   key: string;
 }
@@ -18,7 +19,7 @@ interface TextQuestion extends QuestionCommonFields {
   type: "text";
 }
 
-interface MultiLineTextQuestion extends QuestionCommonFields {
+export interface MultiLineTextQuestion extends QuestionCommonFields {
   type: "multiLineText";
 }
 
@@ -26,17 +27,16 @@ export interface OneFromManyQuestion extends QuestionCommonFields {
   type: "oneFromMany";
   options: {
     label: string;
-    order: number;
     key: string;
   }[];
 }
 
-interface SeveralFromManyQuestion extends QuestionCommonFields {
+export interface SeveralFromManyQuestion extends QuestionCommonFields {
   type: "severalFromMany";
   options: {
     label: string;
-    order: number;
-  };
+    key: string;
+  }[];
 }
 
 export type Question =
@@ -49,15 +49,30 @@ export interface IFormValues {
   name: string;
   desc: string;
   questions: Array<Question>;
+  questionInFocus: Question | null;
 }
+
+const validationSchema = yup.object({
+  name: yup.string().required().min(4),
+  questions: yup
+    .array()
+    .of(
+      yup.object().shape({
+        question: yup.string().required().min(3),
+      })
+    )
+    .required(),
+});
 
 const CreateFormForm = () => {
   const form = useForm<IFormValues>({
     defaultValues: {
-      name: "",
+      name: "My new form",
       desc: "",
       questions: [],
+      questionInFocus: null,
     },
+    resolver: yupResolver(validationSchema),
   });
 
   const formQuestions = useFieldArray({
@@ -68,16 +83,16 @@ const CreateFormForm = () => {
   useWatch({ control: form.control, name: "questions" });
 
   const handleAddQuestion = () => {
-    form.setValue("questions", [
-      ...form.getValues("questions"),
-      {
-        type: "text",
-        question: "",
-        isRequired: false,
-        key: uuid(),
-        order: 1,
-      },
-    ]);
+    const newQuestion: TextQuestion = {
+      type: "text",
+      question: "",
+      isRequired: false,
+      key: uuid(),
+    };
+
+    formQuestions.append(newQuestion);
+
+    form.setValue("questionInFocus", newQuestion);
   };
 
   const handleSubmit = form.handleSubmit((values) => {
@@ -90,32 +105,18 @@ const CreateFormForm = () => {
         <Button type="submit" fullWidth>
           Submit
         </Button>
-        <TextField value="My new Form" />
+        <TextField {...form.register("name")} />
 
         <Button onClick={handleAddQuestion} className="mt-[20px]" fullWidth>
           Add question
         </Button>
 
-        <div className="mt-[10px]">
+        <div className="mt-[10px] flex flex-col gap-[10px]">
           {form.getValues("questions").map((question, i) => (
             <QuestionBlockContext.Provider
               key={question.key}
               value={{
                 questionIndex: i,
-                question,
-                questionKey: question.key,
-                formPath: `questions.${i}`,
-                updateQuestion(callback) {
-                  const updatedQuestion = callback(question);
-
-                  formQuestions.update(i, updatedQuestion);
-                },
-                deleteQuestion() {
-                  formQuestions.remove(i);
-                },
-                duplicateQuestion() {
-                  formQuestions.append({ ...question, key: uuid() });
-                },
               }}
             >
               <QuestionBlock />
